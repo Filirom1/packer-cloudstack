@@ -54,13 +54,18 @@ type config struct {
 
 	// Neccessary settings for Cloudstack to be able to spin up
 	// Virtual Machine with either template or a ISO.
-	ServiceOfferingId string   `mapstructure:"service_offering_id"`
-	TemplateId        string   `mapstructure:"template_id"`
-	ZoneId            string   `mapstructure:"zone_id"`
-	NetworkIds        []string `mapstructure:"network_ids"`
-	DiskOfferingId    string   `mapstructure:"disk_offering_id"`
-	UserData          string   `mapstructure:"user_data"`
-	Hypervisor        string   `mapstructure:"hypervisor"`
+	ServiceOffering     string   `mapstructure:"service_offering"`
+	ServiceOfferingId   string   `mapstructure:"service_offering_id"`
+	Template            string   `mapstructure:"template"`
+	TemplateId          string   `mapstructure:"template_id"`
+	Zone                string   `mapstructure:"zone"`
+	ZoneId              string   `mapstructure:"zone_id"`
+	Networks            []string `mapstructure:"networks"`
+	NetworkIds          []string `mapstructure:"network_ids"`
+	DiskOffering        string   `mapstructure:"disk_offering"`
+	DiskOfferingId      string   `mapstructure:"disk_offering_id"`
+	UserData            string   `mapstructure:"user_data"`
+	Hypervisor          string   `mapstructure:"hypervisor"`
 
 	// Tell Cloudstack under which name, description to save the
 	// template.
@@ -169,9 +174,13 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, error) {
 		"ssh_key_path":          &b.config.SSHKeyPath,
 		"ssh_password":          &b.config.SSHPassword,
 		"http_directory":        &b.config.HTTPDir,
+		"service_offering":      &b.config.ServiceOffering,
 		"service_offering_id":   &b.config.ServiceOfferingId,
+		"template":              &b.config.Template,
 		"template_id":           &b.config.TemplateId,
+		"zone":                  &b.config.Zone,
 		"zone_id":               &b.config.ZoneId,
+		"disk_offering":         &b.config.DiskOffering,
 		"disk_offering_id":      &b.config.DiskOfferingId,
 		"hypervisor":            &b.config.Hypervisor,
 		"template_name":         &b.config.TemplateName,
@@ -220,19 +229,19 @@ func (b *Builder) Prepare(raws ...interface{}) ([]string, error) {
 			errs, errors.New("CLOUDSTACK_SECRET_KEY in env (SecretKey in json) must be specified"))
 	}
 
-	if b.config.ServiceOfferingId == "" {
+	if b.config.ServiceOffering == "" && b.config.ServiceOfferingId == ""{
 		errs = packer.MultiErrorAppend(
-			errs, errors.New("service_offering_id must be specified"))
+			errs, errors.New("service_offering or service_offering_id must be specified"))
 	}
 
-	if b.config.TemplateId == "" {
+	if b.config.Template == "" && b.config.TemplateId == "" {
 		errs = packer.MultiErrorAppend(
-			errs, errors.New("template_id must be specified"))
+			errs, errors.New("template or template_id must be specified"))
 	}
 
-	if b.config.ZoneId == "" {
+	if b.config.Zone == "" && b.config.ZoneId == "" {
 		errs = packer.MultiErrorAppend(
-			errs, errors.New("zone_id must be specified"))
+			errs, errors.New("zone or zone_id must be specified"))
 	}
 
 	sshTimeout, err := time.ParseDuration(b.config.RawSSHTimeout)

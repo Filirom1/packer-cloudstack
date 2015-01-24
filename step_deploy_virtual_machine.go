@@ -34,6 +34,71 @@ func (s *stepDeployVirtualMachine) Run(state multistep.StateBag) multistep.StepA
 	processTemplatedUserdata(state)
 	userData := state.Get("user_data").(string)
 
+	if c.ServiceOfferingId == "" && c.ServiceOffering != "" {
+		serviceOfferingId, err := client.NameToId(c.ServiceOffering, "ServiceOffering", nil)
+		if err != nil {
+			err := fmt.Errorf("Error retrieveing service offering id: %s", err)
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+		c.ServiceOfferingId  = serviceOfferingId
+	}
+
+
+	if c.DiskOfferingId == "" && c.DiskOffering != "" {
+		diskOfferingId, err := client.NameToId(c.DiskOffering, "DiskOffering", nil)
+		if err != nil {
+			err := fmt.Errorf("Error retrieving disk offering id: %s", err)
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+		c.DiskOfferingId = diskOfferingId
+	}
+
+	if c.ZoneId == "" && c.Zone != "" {
+		params := map[string]string{
+			"available": "true",
+		}
+		zoneId, err := client.NameToId(c.Zone, "Zone", params)
+		if err != nil {
+			err := fmt.Errorf("Error retrieving zone id: %s", err)
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+		c.ZoneId = zoneId
+	}
+
+	if c.TemplateId == "" && c.Template != "" {
+		params := map[string]string{
+			"zoneid": c.ZoneId,
+			"templatefilter": "executable",
+		}
+		templateId, err := client.NameToId(c.Template, "Template", params)
+		if err != nil {
+			err := fmt.Errorf("Error retrieveing template id: %s", err)
+			state.Put("error", err)
+			ui.Error(err.Error())
+			return multistep.ActionHalt
+		}
+		c.TemplateId = templateId
+	}
+
+	if len(c.NetworkIds) == 0 && len(c.Networks) > 0 {
+		for i, network := range c.Networks {
+			networkId, err := client.NameToId(network, "Network", nil)
+			if err != nil {
+				err := fmt.Errorf("Error retrieveing network id: %s", err)
+				state.Put("error", err)
+				ui.Error(err.Error())
+				return multistep.ActionHalt
+			}
+			c.NetworkIds[i] = networkId
+		}
+	}
+
 	// Create the virtual machine based on configuration
 	response, err := client.DeployVirtualMachine(c.ServiceOfferingId,
 		c.TemplateId, c.ZoneId, "", c.DiskOfferingId, displayName,
